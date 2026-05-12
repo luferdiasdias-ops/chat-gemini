@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" / >
+    <title>Chat Particular com Gemini</title>
+    <style>
+        :root {
+            --bg-color: #f8fafc;
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #64748b;
+            --secondary-dark: #475569;
+            --white: #ffffff;
+            --user-msg-bg: #e0e7ff;
+            --bot-msg-bg: #f1f5f9;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border: #e2e8f0;
+            --shadow: rgba(99, 102, 241, 0.1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, var(--bg-color) 0%, #eef2ff 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 960px;
+            margin: 0 auto;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 16px;
+            gap: 12px;
+        }
+
+        header {
+            background: var(--white);
+            padding: 20px 24px;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px var(--shadow), 0 2px 4px -2px var(--shadow);
+            border: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        header h1 {
+            margin: 0 0 6px;
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        header h1::before {
+            content: "🤖";
+            font-size: 24px;
+        }
+
+        header p {
+            margin: 0;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        #chat {
+            flex: 1;
+            overflow-y: auto;
+            background: var(--white);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid var(--border);
+            box-shadow: 0 1px 3px 0 var(--shadow);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 14px 18px;
+            border-radius: 18px;
+            line-height: 1.6;
+            word-wrap: break-word;
+            animation: fadeIn 0.3s ease-out;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s;
+        }
+
+        .message:hover {
+            transform: translateY(-1px);
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .user {
+            background: var(--user-msg-bg);
+            margin-left: auto;
+            border-bottom-right-radius: 4px;
+            color: var(--primary-dark);
+        }
+
+        .bot {
+            background: var(--bot-msg-bg);
+            margin-right: auto;
+            border-bottom-left-radius: 4px;
+        }
+
+        .label {
+            font-weight: 600;
+            font-size: 13px;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .user .label::before {
+            content: "👤";
+            font-size: 14px;
+        }
+
+        .bot .label::before {
+            content: "🤖";
+            font-size: 14px;
+        }
+
+        form {
+            display: flex;
+            gap: 10px;
+            margin-top: 4px;
+        }
+
+        input {
+            flex: 1;
+            padding: 16px 20px;
+            border-radius: 12px;
+            border: 2px solid var(--border);
+            font-size: 16px;
+            background: var(--white);
+            transition: all 0.2s;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+        }
+
+        input::placeholder {
+            color: var(--text-secondary);
+            opacity: 0.7;
+        }
+
+        button {
+            padding: 14px 24px;
+            border: none;
+            border-radius: 12px;
+            background: var(--primary);
+            color: var(--white);
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(99, 102, 241, 0.3);
+        }
+
+        button:hover:not(:disabled) {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px rgba(99, 102, 241, 0.4);
+        }
+
+        button:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            background: var(--secondary);
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .actions {
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .secondary {
+            background: var(--white);
+            color: var(--secondary);
+            padding: 12px 18px;
+            font-size: 14px;
+            font-weight: 500;
+            border: 1px solid var(--border);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+
+        .secondary:hover {
+            background: var(--bg-color);
+            color: var(--secondary-dark);
+            border-color: var(--secondary);
+        }
+
+        .enhance-btn {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+            padding: 14px 18px;
+            font-size: 14px;
+            font-weight: 600;
+            box-shadow: 0 2px 4px rgba(245, 158, 11, 0.3);
+        }
+
+        .enhance-btn:hover:not(:disabled) {
+            background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+            box-shadow: 0 4px 6px rgba(245, 158, 11, 0.4);
+        }
+
+        .typing-msg {
+            padding: 10px 16px;
+            opacity: 0.8;
+        }
+
+        .typing {
+            display: none;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: var(--text-secondary);
+            padding: 10px 0;
+        }
+
+        .typing.active {
+            display: flex;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        .typing-dots span {
+            width: 6px;
+            height: 6px;
+            background: var(--secondary);
+            border-radius: 50%;
+            animation: typing 1.4s infinite both;
+        }
+
+        .typing-msg {
+            padding: 10px 16px;
+            opacity: 0.8;
+        }
+
+        .typing-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0);
+                opacity: 0.5;
+            }
+            30% {
+                transform: translateY(-4px);
+                opacity: 1;
+            }
+        }
+
+        #chat::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #chat::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        #chat::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 3px;
+        }
+
+        #chat::-webkit-scrollbar-thumb:hover {
+            background: var(--secondary);
+        }
+
+        @media (max-width: 640px) {
+            .container {
+                padding: 10px;
+                gap: 8px;
+            }
+
+            header {
+                padding: 16px;
+                border-radius: 12px;
+            }
+
+            header h1 {
+                font-size: 18px;
+            }
+
+            .message {
+                max-width: 90%;
+                padding: 12px 14px;
+            }
+
+            input, button {
+                padding: 14px 16px;
+            }
+
+            .enhance-btn {
+                padding: 14px 12px;
+                font-size: 13px;
+            }
+
+            form {
+                gap: 6px;
+            }
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.2s ease-out;
+            backdrop-filter: blur(4px);
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--white);
+            border-radius: 16px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 85vh;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            border: 1px solid var(--border);
+            animation: slideUp 0.3s ease-out;
+            display: flex;
+            flex-direction: column;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .modal-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-size: 18px;
+            color: var(--primary);
+            font-weight: 600;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 28px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            line-height: 1;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .modal-close:hover {
+            background: var(--bg-color);
+            color: var(--text-primary);
+        }
+
+        .modal-body {
+            padding: 20px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            overflow-y: auto;
+        }
+
+        .modal-info {
+            margin: 0;
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        #enhancedText {
+            width: 100%;
+            min-height: 200px;
+            max-height: 400px;
+            padding: 14px 16px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            font-size: 15px;
+            font-family: inherit;
+            line-height: 1.6;
+            resize: vertical;
+            transition: all 0.2s;
+            background: var(--bg-color);
+        }
+
+        #enhancedText:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: var(--white);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            padding-top: 8px;
+        }
+
+        .modal-actions .primary {
+            background: var(--primary);
+            padding: 12px 20px;
+        }
+
+        .modal-actions .primary:hover {
+            background: var(--primary-dark);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>Chat Particular com Gemini</h1>
+            <p>Responde usando os arquivos TXT da pasta context.</p>
+        </header>
+        <main id="chat">
+            <div class="message bot">
+                <span class="label">Assistente</span>
+                Olá. Envie uma pergunta sobre o material TXT carregado.
+            </div>
+        </main>
+        <form id="form">
+            <input id="message" type="text" placeholder="Digite sua pergunta..." autocomplete="off" />
+            <button id="send" type="submit">Enviar</button>
+            <button id="enhance" type="button" class="enhance-btn" title="Melhorar prompt">✨ Melhorar</button>
+        </form>
+        <div class="actions">
+            <button class="secondary" id="reset" type="button">Limpar histórico</button>
+        </div>
+    </div>
+
+    <!-- Enhancement Modal -->
+    <div id="enhanceModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">✨ Prompt Melhorado</h2>
+                <button class="modal-close" id="closeModal" aria-label="Fechar">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-info">Seu prompt foi aprimorado com contexto e clareza. Edite se necessário:</p>
+                <textarea id="enhancedText" spellcheck="false" aria-label="Prompt aprimorado"></textarea>
+                <div class="modal-actions">
+                    <button id="copyEnhanced" class="secondary">📋 Copiar</button>
+                    <button id="useEnhanced" class="primary">✅ Usar Prompt</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        const form = document.getElementById("form");
+        const input = document.getElementById("message");
+        const chat = document.getElementById("chat");
+        const sendButton = document.getElementById("send");
+        const resetButton = document.getElementById("reset");
+        const enhanceButton = document.getElementById("enhance");
+        const modal = document.getElementById("enhanceModal");
+        const closeModalBtn = document.getElementById("closeModal");
+        const enhancedText = document.getElementById("enhancedText");
+        const copyEnhancedBtn = document.getElementById("copyEnhanced");
+        const useEnhancedBtn = document.getElementById("useEnhanced");
+
+        function addMessage(type, text) {
+            const div = document.createElement("div");
+            div.className = `message ${type}`;
+            const label = document.createElement("span");
+            label.className = "label";
+            label.textContent = type === "user" ? "Você" : "Assistente";
+            const content = document.createElement("div");
+            content.textContent = text;
+            div.appendChild(label);
+            div.appendChild(content);
+            chat.appendChild(div);
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+        function showTyping() {
+            if (document.getElementById("typing")) return;
+            const typingDiv = document.createElement("div");
+            typingDiv.id = "typing";
+            typingDiv.className = "message bot typing-msg";
+            const label = document.createElement("span");
+            label.className = "label";
+            label.textContent = "Assistente";
+            const dots = document.createElement("div");
+            dots.className = "typing-dots";
+            dots.innerHTML = '<span></span><span></span><span></span>';
+            typingDiv.appendChild(label);
+            typingDiv.appendChild(dots);
+            chat.appendChild(typingDiv);
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+        function hideTyping() {
+            const typingDiv = document.getElementById("typing");
+            if (typingDiv) typingDiv.remove();
+        }
+
+        function openModal(text) {
+            enhancedText.value = text;
+            modal.classList.add("active");
+            setTimeout(() => enhancedText.focus(), 100);
+        }
+
+        function closeModal() {
+            modal.classList.remove("active");
+            enhancedText.value = "";
+        }
+
+        async function enhancePrompt() {
+            const originalMessage = input.value.trim();
+            if (!originalMessage) {
+                input.focus();
+                return;
+            }
+
+            enhanceButton.disabled = true;
+            enhanceButton.textContent = "Aprimorando...";
+
+            try {
+                const response = await fetch("/api/enhance", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ message: originalMessage }),
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    addMessage("bot", `Erro: ${data.error || "Falha ao aprimorar prompt."}`);
+                    return;
+                }
+
+                if (data.enhanced && data.enhanced !== originalMessage) {
+                    openModal(data.enhanced);
+                } else {
+                    addMessage("bot", "O prompt já está bem formulado. Não foram necessárias melhorias.");
+                }
+            } catch (error) {
+                addMessage("bot", "Erro de conexão ao tentar aprimorar o prompt.");
+            } finally {
+                enhanceButton.disabled = false;
+                enhanceButton.textContent = "✨ Melhorar";
+            }
+        }
+
+        closeModalBtn.addEventListener("click", closeModal);
+
+        modal.addEventListener("click", (e) => {
+            if (e.target === modal) closeModal();
+        });
+
+        copyEnhancedBtn.addEventListener("click", async () => {
+            try {
+                await navigator.clipboard.writeText(enhancedText.value);
+                const originalText = copyEnhancedBtn.textContent;
+                copyEnhancedBtn.textContent = "✅ Copiado!";
+                setTimeout(() => {
+                    copyEnhancedBtn.textContent = originalText;
+                }, 2000);
+            } catch (err) {
+                alert("Não foi possível copiar. Selecione e copie manualmente.");
+            }
+        });
+
+        useEnhancedBtn.addEventListener("click", () => {
+            input.value = enhancedText.value;
+            closeModal();
+            input.focus();
+        });
+
+        enhanceButton.addEventListener("click", enhancePrompt);
+
+        form.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            const message = input.value.trim();
+            if (!message) {
+                return;
+            }
+            addMessage("user", message);
+            input.value = "";
+            sendButton.disabled = true;
+            sendButton.textContent = "Enviando...";
+            showTyping();
+            try {
+                const response = await fetch("/api/chat", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ message }),
+                });
+                const data = await response.json();
+                hideTyping();
+                if (!response.ok) {
+                    addMessage("bot", data.error || "Erro ao processar a resposta.");
+                    return;
+                }
+                addMessage("bot", data.answer);
+            } catch (error) {
+                hideTyping();
+                addMessage("bot", "Erro de conexão com o servidor.");
+            } finally {
+                sendButton.disabled = false;
+                sendButton.textContent = "Enviar";
+                input.focus();
+            }
+        });
+
+        resetButton.addEventListener("click", async () => {
+            hideTyping();
+            await fetch("/api/reset", {
+                method: "POST",
+            });
+            chat.innerHTML = "";
+            addMessage(
+                "bot",
+                "Histórico apagado. Envie uma nova pergunta sobre o material TXT."
+            );
+        });
+
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "Escape" && modal.classList.contains("active")) {
+                closeModal();
+            }
+        });
+
+        input.focus();
+    </script>
+</body>
+</html>
